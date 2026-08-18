@@ -45,9 +45,9 @@ struct ContentView: View {
     private let extendedHoverPadding: CGFloat = 30
     private let zeroHeightHoverPadding: CGFloat = 10
 
-    private let settingsMountDelay: Duration = .milliseconds(300)
-    private let settingsUnmountDelay: Duration = .milliseconds(90)
-    private let settingsContentAnimation = Animation.smooth(duration: 0.24, extraBounce: 0)
+    private let settingsMountDelay: Duration = .milliseconds(280)
+    private let settingsUnmountDelay: Duration = .milliseconds(80)
+    private let settingsContentAnimation = Animation.smooth(duration: 0.32, extraBounce: 0)
 
     private var topCornerRadius: CGFloat {
        ((vm.notchState == .open) && Defaults[.cornerRadiusScaling])
@@ -399,8 +399,11 @@ struct ContentView: View {
                     }
                 }
                 .id(presentedView)
-                .transition(.opacity.combined(with: .scale(scale: 0.985, anchor: .top)))
-                .animation(.easeOut(duration: 0.18), value: presentedView)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .scale(scale: 0.99, anchor: .top)),
+                    removal: .opacity.combined(with: .scale(scale: 0.995, anchor: .top))
+                ))
+                .animation(settingsContentAnimation, value: presentedView)
                 .zIndex(1)
                 .allowsHitTesting(vm.notchState == .open)
                 .opacity(gestureProgress != 0 ? 1.0 - min(abs(gestureProgress) * 0.1, 0.3) : 1.0)
