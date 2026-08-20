@@ -23,6 +23,7 @@ final class ShelfStateViewModel: ObservableObject {
     // Queue for deferred bookmark updates to avoid publishing during view updates
     private var pendingBookmarkUpdates: [ShelfItem.ID: Data] = [:]
     private var updateTask: Task<Void, Never>?
+    private var cleanupTask: Task<Void, Never>?
 
     private init() {
         items = Array(ShelfPersistenceService.shared.load().prefix(Self.maximumItemCount))
@@ -91,23 +92,26 @@ final class ShelfStateViewModel: ObservableObject {
     }
 
     func cleanupInvalidItems() {
-        Task { [weak self] in
+        cleanupTask?.cancel()
+        cleanupTask = Task { [weak self] in
             guard let self else { return }
-            var keep: [ShelfItem] = []
-            for item in self.items {
+            let snapshot = self.items
+            var invalidIDs: Set<ShelfItem.ID> = []
+            for item in snapshot {
+                guard !Task.isCancelled else { return }
                 switch item.kind {
                 case .file(let data):
                     let bookmark = Bookmark(data: data)
-                    if await bookmark.validate() {
-                        keep.append(item)
-                    } else {
+                    if !(await bookmark.validate()) {
+                        invalidIDs.insert(item.id)
                         item.cleanupStoredData()
                     }
                 default:
-                    keep.append(item)
+                    break
                 }
             }
-            await MainActor.run { self.items = keep }
+            guard !Task.isCancelled, !invalidIDs.isEmpty else { return }
+            self.items.removeAll { invalidIDs.contains($0.id) }
         }
     }
 

@@ -13,7 +13,6 @@ struct ShelfView: View {
     @StateObject var tvm = ShelfStateViewModel.shared
     @StateObject var selection = ShelfSelectionModel.shared
     @StateObject private var quickLookService = QuickLookService()
-    private let spacing: CGFloat = 8
 
     var body: some View {
         HStack(spacing: 14) {
@@ -33,7 +32,9 @@ struct ShelfView: View {
     }
     
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
-        guard !selection.isDragging else { return false }
+        guard !selection.isDragging,
+              tvm.items.count < ShelfStateViewModel.maximumItemCount
+        else { return false }
         vm.dropEvent = true
         ShelfStateViewModel.shared.load(providers)
         return true
@@ -97,9 +98,6 @@ struct ShelfView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .onDrop(of: [.fileURL, .url, .utf8PlainText, .plainText, .data], isTargeted: $vm.dragDetectorTargeting) { providers in
-                    handleDrop(providers: providers)
-                }
             }
         }
         .onAppear {
