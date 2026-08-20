@@ -13,12 +13,11 @@ struct ShelfView: View {
     @StateObject var tvm = ShelfStateViewModel.shared
     @StateObject var selection = ShelfSelectionModel.shared
     @StateObject private var quickLookService = QuickLookService()
-    private let spacing: CGFloat = 8
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             FileShareView()
-                .aspectRatio(1, contentMode: .fit)
+                .frame(width: 142, height: 154)
                 .environmentObject(vm)
             panel
                 .onDrop(of: [.fileURL, .url, .utf8PlainText, .plainText, .data], isTargeted: $vm.dragDetectorTargeting) { providers in
@@ -33,7 +32,9 @@ struct ShelfView: View {
     }
     
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
-        guard !selection.isDragging else { return false }
+        guard !selection.isDragging,
+              tvm.items.count < ShelfStateViewModel.maximumItemCount
+        else { return false }
         vm.dropEvent = true
         ShelfStateViewModel.shared.load(providers)
         return true
@@ -59,20 +60,12 @@ struct ShelfView: View {
     }
 
     var panel: some View {
-        RoundedRectangle(cornerRadius: 16)
-            .stroke(
-                vm.dragDetectorTargeting
-                    ? Color.accentColor.opacity(0.9)
-                    : Color.white.opacity(0.1),
-                style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [10])
-            )
-            .overlay {
-                content
-                    .padding()
-            }
-            .transaction { transaction in
-                transaction.animation = vm.animation
-            }
+        content
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(vm.dragDetectorTargeting ? Color.accentColor.opacity(0.10) : .clear)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
             .contentShape(Rectangle())
             .onTapGesture { selection.clear() }
     }
@@ -93,23 +86,33 @@ struct ShelfView: View {
                         .fontWeight(.medium)
                 }
             } else {
-                ScrollView(.horizontal) {
-                    HStack(spacing: spacing) {
-                        ForEach(tvm.items) { item in
-                            ShelfItemView(item: item)
+                let columns = Array(repeating: GridItem(.fixed(98), spacing: 10), count: 4)
+                LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
+                    ForEach(0..<ShelfStateViewModel.maximumItemCount, id: \.self) { index in
+                        if index < tvm.items.count {
+                            ShelfItemView(item: tvm.items[index])
                                 .environmentObject(quickLookService)
+                        } else {
+                            ShelfSlotPlaceholderView()
                         }
                     }
                 }
-                .padding(-spacing)
-                .scrollIndicators(.never)
-                .onDrop(of: [.fileURL, .url, .utf8PlainText, .plainText, .data], isTargeted: $vm.dragDetectorTargeting) { providers in
-                    handleDrop(providers: providers)
-                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
         }
         .onAppear {
             ShelfStateViewModel.shared.cleanupInvalidItems()
         }
+    }
+}
+
+
+private struct ShelfSlotPlaceholderView: View {
+    var body: some View {
+        Image(systemName: "plus")
+            .font(.system(size: 15, weight: .medium))
+            .foregroundStyle(.white.opacity(0.16))
+            .frame(width: 96, height: 82)
+            .contentShape(Rectangle())
     }
 }

@@ -223,12 +223,15 @@ class BoringViewModel: NSObject, ObservableObject {
     }
 
     /// 根据功能开关计算展开尺寸:
-    /// 日历/待办全部开启、或处于收纳/工具等非主页视图时,用标准尺寸(640);
+    /// 暂存器使用独立高度，工具等非主页视图使用标准尺寸(640);
     /// 主页且关闭任意一项时收窄到紧凑尺寸:宽度刚好容纳
     /// 左图标组 + 空隙 + 刘海 + 空隙 + 右图标组(播放器随此宽度联动)
     private func currentOpenSize() -> CGSize {
-        // 收纳/工具等面板保持标准宽度并加高,确保内容完整、不被屏幕顶部遮挡
-        if coordinator.currentView == .shelf || coordinator.currentView == .tools {
+        // 两行文件加顶部工具栏需要更高的固定空间，避免工具栏被压缩裁切。
+        if coordinator.currentView == .shelf {
+            return shelfNotchSize
+        }
+        if coordinator.currentView == .tools {
             return openNotchSize
         }
         if Defaults[.showCalendar] && Defaults[.showDailyTodo] {

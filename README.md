@@ -2,9 +2,16 @@
   <br>
   <a href="http://theboring.name"><img src="https://framerusercontent.com/images/RFK4vs0kn8pRMuOO58JeyoemXA.png?scale-down-to=256" alt="Boring Notch" width="150"></a>
   <br>
-  Boring Notch
+  Mac灵动岛
   <br>
 </h1>
+
+<p align="center">
+  <strong>基于 boringNotch 的更新中文版</strong><br>
+  面向中文 macOS 用户的界面本地化、布局优化与功能增强版本。
+</p>
+
+> 本项目基于 TheBoredTeam 的开源项目 boring.notch 修改并依照 GPL-3.0 发布。原项目及第三方组件的版权和许可声明继续保留。
 
 
 <p align="center">
@@ -193,5 +200,4 @@ For a full list of licenses and attributions, please see the [Third-Party Licens
 
 - **SwiftUI**: For making us look like coding wizards.
 - **You**: For being awesome and checking out **boring.notch**!
-
 

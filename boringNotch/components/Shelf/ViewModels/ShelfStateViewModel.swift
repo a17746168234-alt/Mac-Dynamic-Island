@@ -10,6 +10,7 @@ import AppKit
 @MainActor
 final class ShelfStateViewModel: ObservableObject {
     static let shared = ShelfStateViewModel()
+    static let maximumItemCount = 8
 
     @Published private(set) var items: [ShelfItem] = [] {
         didSet { ShelfPersistenceService.shared.save(items) }
@@ -22,9 +23,10 @@ final class ShelfStateViewModel: ObservableObject {
     // Queue for deferred bookmark updates to avoid publishing during view updates
     private var pendingBookmarkUpdates: [ShelfItem.ID: Data] = [:]
     private var updateTask: Task<Void, Never>?
+    private var cleanupTask: Task<Void, Never>?
 
     private init() {
-        items = ShelfPersistenceService.shared.load()
+        items = Array(ShelfPersistenceService.shared.load().prefix(Self.maximumItemCount))
     }
 
 
@@ -33,7 +35,7 @@ final class ShelfStateViewModel: ObservableObject {
         var merged = items
         // Deduplicate by identityKey while preserving order (existing first)
         var seen: Set<String> = Set(merged.map { $0.identityKey })
-        for it in newItems {
+        for it in newItems where merged.count < Self.maximumItemCount {
             let key = it.identityKey
             if !seen.contains(key) {
                 merged.append(it)
@@ -90,23 +92,26 @@ final class ShelfStateViewModel: ObservableObject {
     }
 
     func cleanupInvalidItems() {
-        Task { [weak self] in
+        cleanupTask?.cancel()
+        cleanupTask = Task { [weak self] in
             guard let self else { return }
-            var keep: [ShelfItem] = []
-            for item in self.items {
+            let snapshot = self.items
+            var invalidIDs: Set<ShelfItem.ID> = []
+            for item in snapshot {
+                guard !Task.isCancelled else { return }
                 switch item.kind {
                 case .file(let data):
                     let bookmark = Bookmark(data: data)
-                    if await bookmark.validate() {
-                        keep.append(item)
-                    } else {
+                    if !(await bookmark.validate()) {
+                        invalidIDs.insert(item.id)
                         item.cleanupStoredData()
                     }
                 default:
-                    keep.append(item)
+                    break
                 }
             }
-            await MainActor.run { self.items = keep }
+            guard !Task.isCancelled, !invalidIDs.isEmpty else { return }
+            self.items.removeAll { invalidIDs.contains($0.id) }
         }
     }
 

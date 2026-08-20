@@ -86,7 +86,6 @@ struct ScaleButtonStyle: ButtonStyle {
 
 /// A view that displays detailed battery information and settings.
 struct BatteryMenuView: View {
-    
     var isPluggedIn: Bool
     var isCharging: Bool
     var levelBattery: Float
@@ -97,65 +96,84 @@ struct BatteryMenuView: View {
 
     @Environment(\.openURL) private var openURL
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+    private var batteryStatus: String {
+        if maxCapacity > 0, levelBattery >= maxCapacity {
+            return String(localized: "Fully Charged")
+        }
+        return isPluggedIn ? String(localized: "Charged") : String(localized: "Power Disconnected")
+    }
 
+    private var powerSource: String {
+        isPluggedIn ? String(localized: "Power Adapter") : String(localized: "Battery Power")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("Battery Status")
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                Text("Battery")
+                    .font(.title3.weight(.semibold))
                 Spacer()
                 Text("\(Int(levelBattery))%")
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                    .font(.title3.weight(.semibold))
+                    .monospacedDigit()
             }
-            
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Max Capacity: \(Int(maxCapacity))%")
-                    .font(.subheadline)
-                    .fontWeight(.regular)
-                if isInLowPowerMode {
-                    Label("Low Power Mode", systemImage: "bolt.circle")
-                        .font(.subheadline)
-                        .fontWeight(.regular)
-                }
-                if isCharging {
-                    Label("Charging", systemImage: "bolt.fill")
-                        .font(.subheadline)
-                        .fontWeight(.regular)
-                }
-                if isPluggedIn {
-                    Label("Plugged In", systemImage: "powerplug.fill")
-                        .font(.subheadline)
-                        .fontWeight(.regular)
-                }
-                if timeToFullCharge > 0 {
-                    Label("Time to Full Charge: \(timeToFullCharge) min", systemImage: "clock")
-                        .font(.subheadline)
-                        .fontWeight(.regular)
-                }
-                if !isCharging && isPluggedIn && levelBattery >= 80 {
-                    Label("Charging on Hold: Desktop Mode", systemImage: "desktopcomputer")
-                        .font(.subheadline)
-                        .fontWeight(.regular)
-                }
-                    
-            }
-            .padding(.vertical, 8)
 
-            Divider().background(Color.white)
+            HStack(spacing: 6) {
+                Text("Power:")
+                Text(powerSource)
+                    .foregroundStyle(Color.black.opacity(0.55))
+            }
+            .font(.body)
+
+            Divider()
+
+            Text("Low Power Mode")
+                .font(.headline)
+
+            HStack(spacing: 12) {
+                Image(systemName: isInLowPowerMode ? "battery.25percent" : "battery.100percent")
+                    .font(.system(size: 22, weight: .medium))
+                    .foregroundStyle(isInLowPowerMode ? .yellow : Color.black.opacity(0.45))
+                    .frame(width: 44, height: 44)
+                    .background(Color.black.opacity(0.07), in: Circle())
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(batteryStatus)
+                        .font(.body.weight(.medium))
+                    if isCharging, timeToFullCharge > 0 {
+                        Text(String(format: String(localized: "%d minutes until full"), timeToFullCharge))
+                            .font(.caption)
+                            .foregroundStyle(Color.black.opacity(0.55))
+                    } else if isInLowPowerMode {
+                        Text("Low Power Mode is On")
+                            .font(.caption)
+                            .foregroundStyle(Color.black.opacity(0.55))
+                    }
+                }
+                Spacer()
+            }
+
+            Divider()
+
+            Text("No high-energy apps")
+                .font(.body)
+                .foregroundStyle(Color.black.opacity(0.55))
+
+            Divider()
 
             Button(action: openBatteryPreferences) {
-                Label("Battery Settings", systemImage: "gearshape")
-                    .fontWeight(.regular)
+                Text("Battery Settings…")
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity)
             .buttonStyle(.plain)
-            .padding(.vertical, 8)
+            .font(.body)
         }
-        .padding()
-        .frame(width: 280)
-        .foregroundColor(.white)
+        .padding(20)
+        .frame(width: 320)
+        .foregroundStyle(Color.black.opacity(0.86))
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .preferredColorScheme(.light)
     }
 
     private func openBatteryPreferences() {
@@ -216,7 +234,7 @@ struct BoringBatteryView: View {
         .buttonStyle(ScaleButtonStyle())
         .popover(
             isPresented: $showPopupMenu,
-            arrowEdge: .bottom) {
+            arrowEdge: .top) {
             BatteryMenuView(
                 isPluggedIn: isPluggedIn,
                 isCharging: isCharging,

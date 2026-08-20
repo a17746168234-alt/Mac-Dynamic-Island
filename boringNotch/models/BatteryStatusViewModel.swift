@@ -1,5 +1,4 @@
 import Cocoa
-import Combine
 import Defaults
 import Foundation
 import IOKit.ps
@@ -11,7 +10,6 @@ class BatteryStatusViewModel: ObservableObject {
     private var wasCharging: Bool = false
     private var powerSourceChangedCallback: IOPowerSourceCallbackType?
     private var runLoopSource: Unmanaged<CFRunLoopSource>?
-    private var simulationCancellable: AnyCancellable?
 
     @ObservedObject var coordinator = BoringViewCoordinator.shared
 
@@ -34,34 +32,11 @@ class BatteryStatusViewModel: ObservableObject {
     private init() {
         setupPowerStatus()
         setupMonitor()
-        simulationCancellable = Defaults.publisher(.simulateFullBattery)
-            .map(\.newValue)
-            .removeDuplicates()
-            .receive(on: RunLoop.main)
-            .sink { [weak self] enabled in
-                guard let self else { return }
-                enabled ? self.applySimulatedFullBattery() : self.setupPowerStatus()
-            }
     }
 
     /// Sets up the initial power status by fetching battery information.
     private func setupPowerStatus() {
-        if Defaults[.simulateFullBattery] {
-            applySimulatedFullBattery()
-        } else {
-            updateBatteryInfo(managerBattery.initializeBatteryInfo())
-        }
-    }
-
-    private func applySimulatedFullBattery() {
-        withAnimation {
-            levelBattery = 100
-            maxCapacity = 100
-            isPluggedIn = true
-            isCharging = false
-            timeToFullCharge = 0
-            statusText = String(localized: "Full charge")
-        }
+        updateBatteryInfo(managerBattery.initializeBatteryInfo())
     }
 
     /// Sets up the monitor to observe battery events
@@ -75,13 +50,12 @@ class BatteryStatusViewModel: ObservableObject {
     /// Handles battery events and updates the corresponding properties
     /// - Parameter event: The battery event to handle
     private func handleBatteryEvent(_ event: BatteryActivityManager.BatteryEvent) {
-        guard !Defaults[.simulateFullBattery] else { return }
         switch event {
         case .powerSourceChanged(let isPluggedIn):
             print("🔌 Power source: \(isPluggedIn ? "Connected" : "Disconnected")")
             withAnimation {
                 self.isPluggedIn = isPluggedIn
-                self.statusText = isPluggedIn ? String(localized: "Plugged In") : String(localized: "Unplugged")
+                self.updateStatusText()
                 self.notifyImportanChangeStatus()
             }
 
@@ -89,6 +63,7 @@ class BatteryStatusViewModel: ObservableObject {
             print("🔋 Battery level: \(Int(level))%")
             withAnimation {
                 self.levelBattery = level
+                self.updateStatusText()
             }
 
         case .lowPowerModeChanged(let isEnabled):
@@ -96,7 +71,7 @@ class BatteryStatusViewModel: ObservableObject {
             self.notifyImportanChangeStatus()
             withAnimation {
                 self.isInLowPowerMode = isEnabled
-                self.statusText = self.isInLowPowerMode ? String(localized: "Low Power Mode On") : String(localized: "Low Power Mode Off")
+                self.updateStatusText()
             }
 
         case .isChargingChanged(let isCharging):
@@ -106,10 +81,7 @@ class BatteryStatusViewModel: ObservableObject {
             self.notifyImportanChangeStatus()
             withAnimation {
                 self.isCharging = isCharging
-                self.statusText =
-                    isCharging
-                    ? String(localized: "Charging battery")
-                    : (self.levelBattery < self.maxCapacity ? String(localized: "Not charging") : String(localized: "Full charge"))
+                self.updateStatusText()
             }
 
         case .timeToFullChargeChanged(let time):
@@ -122,6 +94,7 @@ class BatteryStatusViewModel: ObservableObject {
             print("🔋 Max capacity: \(capacity)")
             withAnimation {
                 self.maxCapacity = capacity
+                self.updateStatusText()
             }
 
         case .error(let description):
@@ -139,7 +112,18 @@ class BatteryStatusViewModel: ObservableObject {
             self.isInLowPowerMode = batteryInfo.isInLowPowerMode
             self.timeToFullCharge = batteryInfo.timeToFullCharge
             self.maxCapacity = batteryInfo.maxCapacity
-            self.statusText = batteryInfo.isPluggedIn ? String(localized: "Plugged In") : String(localized: "Unplugged")
+            self.updateStatusText()
+        }
+    }
+
+    /// Keeps the compact notch message independent from transient IOKit event order.
+    private func updateStatusText() {
+        if maxCapacity > 0, levelBattery >= maxCapacity {
+            statusText = String(localized: "Fully Charged")
+        } else if isPluggedIn {
+            statusText = String(localized: "Charged")
+        } else {
+            statusText = String(localized: "Power Disconnected")
         }
     }
 
@@ -153,7 +137,6 @@ class BatteryStatusViewModel: ObservableObject {
     }
 
     deinit {
-        simulationCancellable?.cancel()
         print("🔌 Cleaning up battery monitoring...")
         if let managerBatteryId: Int = managerBatteryId {
             managerBattery.removeObserver(byId: managerBatteryId)

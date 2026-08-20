@@ -14,11 +14,12 @@ let batterySneakSize: CGSize = .init(width: 160, height: 1)
 
 let shadowPadding: CGFloat = 20
 let openNotchSize: CGSize = .init(width: 640, height: 210)
+let shelfNotchSize: CGSize = .init(width: 640, height: 260)
 let windowSize: CGSize = .init(width: 1200, height: 760)
 let largeNotchTransitionAnimation = Animation.interactiveSpring(
-    response: 0.44,
-    dampingFraction: 0.9,
-    blendDuration: 0.14
+    response: 0.52,
+    dampingFraction: 0.88,
+    blendDuration: 0.18
 )
 
 @MainActor func launcherNotchSize(screenUUID: String? = nil) -> CGSize {

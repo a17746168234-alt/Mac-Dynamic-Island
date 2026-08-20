@@ -13,19 +13,21 @@ struct TabModel: Identifiable {
     let view: NotchViews
 }
 
-private let primaryTabs = [
-    TabModel(label: String(localized: "Home"), icon: "house.fill", view: .home),
-    TabModel(label: String(localized: "Shelf"), icon: "tray.fill", view: .shelf),
-    TabModel(label: String(localized: "Tools"), icon: "square.grid.2x2.fill", view: .tools)
-]
+private func primaryTabs(showLauncher: Bool) -> [TabModel] {
+    var tabs = [
+        TabModel(label: String(localized: "Home"), icon: "house.fill", view: .home),
+        TabModel(label: String(localized: "Shelf"), icon: "tray.fill", view: .shelf),
+        TabModel(label: String(localized: "Clipboard History"), icon: "doc.on.clipboard", view: .tools)
+    ]
+    if showLauncher {
+        tabs.append(TabModel(label: String(localized: "Application Launcher"), icon: "square.grid.3x3.fill", view: .launcher))
+    }
+    return tabs
+}
 
 private var utilityTabs: [TabModel] {
-    var result: [TabModel] = []
-    if Defaults[.settingsIconInNotch] {
-        result.append(TabModel(label: String(localized: "Settings"), icon: "gear", view: .settings))
-    }
-    result.append(TabModel(label: String(localized: "Application Launcher"), icon: "square.grid.3x3.fill", view: .launcher))
-    return result
+    guard Defaults[.settingsIconInNotch] else { return [] }
+    return [TabModel(label: String(localized: "Settings"), icon: "gear", view: .settings)]
 }
 
 private struct HeaderTabBar: View {
@@ -57,8 +59,10 @@ private struct HeaderTabBar: View {
 }
 
 struct TabSelectionView: View {
+    @Default(.showApplicationLauncher) private var showApplicationLauncher
+
     var body: some View {
-        HeaderTabBar(tabs: primaryTabs, deselectsToHome: false)
+        HeaderTabBar(tabs: primaryTabs(showLauncher: showApplicationLauncher), deselectsToHome: false)
     }
 }
 
