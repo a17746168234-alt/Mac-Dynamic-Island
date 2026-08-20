@@ -36,8 +36,8 @@ struct ShelfItemView: View {
                     iconView
                     textView
                 }
-                .frame(width: 84)
-                .padding(.vertical, 4)
+                .frame(width: 96)
+                .padding(.vertical, 5)
                 .padding(.horizontal, 2)
                 .background(backgroundView)
                 .contentShape(Rectangle())
@@ -58,8 +58,8 @@ struct ShelfItemView: View {
                 )
             } else {
                 Color.clear
-                    .frame(width: 84)
-                    .padding(.vertical, 4)
+                    .frame(width: 96)
+                    .padding(.vertical, 5)
                     .padding(.horizontal, 2)
             }
         }
@@ -98,19 +98,19 @@ struct ShelfItemView: View {
         Image(nsImage: viewModel.thumbnail ?? item.icon)
             .resizable()
             .aspectRatio(contentMode: .fit)
-            .frame(width: 40, height: 40)
+            .frame(width: 50, height: 50)
             .clipShape(RoundedRectangle(cornerRadius: 9))
             .shadow(color: .black.opacity(0.15), radius: 3, x: 0, y: 2)
     }
 
     private var textView: some View {
         Text(item.displayName)
-            .font(.system(size: 10, weight: .medium))
+            .font(.system(size: 11, weight: .medium))
             .foregroundStyle(.primary)
             .lineLimit(2)
             .truncationMode(.middle)
             .multilineTextAlignment(.center)
-            .frame(height: 24, alignment: .top)
+            .frame(height: 26, alignment: .top)
     }
 
     private var backgroundView: some View {

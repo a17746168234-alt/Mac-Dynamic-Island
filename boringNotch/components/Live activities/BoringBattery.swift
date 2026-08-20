@@ -121,7 +121,7 @@ struct BatteryMenuView: View {
             HStack(spacing: 6) {
                 Text("Power:")
                 Text(powerSource)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.black.opacity(0.55))
             }
             .font(.body)
 
@@ -133,9 +133,9 @@ struct BatteryMenuView: View {
             HStack(spacing: 12) {
                 Image(systemName: isInLowPowerMode ? "battery.25percent" : "battery.100percent")
                     .font(.system(size: 22, weight: .medium))
-                    .foregroundStyle(isInLowPowerMode ? .yellow : .secondary)
+                    .foregroundStyle(isInLowPowerMode ? .yellow : Color.black.opacity(0.45))
                     .frame(width: 44, height: 44)
-                    .background(.quaternary, in: Circle())
+                    .background(Color.black.opacity(0.07), in: Circle())
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(batteryStatus)
@@ -143,11 +143,11 @@ struct BatteryMenuView: View {
                     if isCharging, timeToFullCharge > 0 {
                         Text(String(format: String(localized: "%d minutes until full"), timeToFullCharge))
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.black.opacity(0.55))
                     } else if isInLowPowerMode {
                         Text("Low Power Mode is On")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.black.opacity(0.55))
                     }
                 }
                 Spacer()
@@ -157,7 +157,7 @@ struct BatteryMenuView: View {
 
             Text("No high-energy apps")
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.black.opacity(0.55))
 
             Divider()
 
@@ -170,7 +170,9 @@ struct BatteryMenuView: View {
         }
         .padding(20)
         .frame(width: 320)
-        .foregroundStyle(.primary)
+        .foregroundStyle(Color.black.opacity(0.86))
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .preferredColorScheme(.light)
     }
 

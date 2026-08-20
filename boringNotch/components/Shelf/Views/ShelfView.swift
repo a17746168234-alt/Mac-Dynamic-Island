@@ -85,14 +85,18 @@ struct ShelfView: View {
                         .fontWeight(.medium)
                 }
             } else {
-                let columns = Array(repeating: GridItem(.fixed(88), spacing: spacing), count: 4)
-                LazyVGrid(columns: columns, alignment: .center, spacing: spacing) {
-                    ForEach(Array(tvm.items.prefix(8))) { item in
-                        ShelfItemView(item: item)
-                            .environmentObject(quickLookService)
+                let columns = Array(repeating: GridItem(.fixed(98), spacing: 10), count: 4)
+                LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
+                    ForEach(0..<ShelfStateViewModel.maximumItemCount, id: \.self) { index in
+                        if index < tvm.items.count {
+                            ShelfItemView(item: tvm.items[index])
+                                .environmentObject(quickLookService)
+                        } else {
+                            ShelfSlotPlaceholderView()
+                        }
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .onDrop(of: [.fileURL, .url, .utf8PlainText, .plainText, .data], isTargeted: $vm.dragDetectorTargeting) { providers in
                     handleDrop(providers: providers)
                 }
@@ -101,5 +105,16 @@ struct ShelfView: View {
         .onAppear {
             ShelfStateViewModel.shared.cleanupInvalidItems()
         }
+    }
+}
+
+
+private struct ShelfSlotPlaceholderView: View {
+    var body: some View {
+        Image(systemName: "plus")
+            .font(.system(size: 15, weight: .medium))
+            .foregroundStyle(.white.opacity(0.16))
+            .frame(width: 96, height: 82)
+            .contentShape(Rectangle())
     }
 }
