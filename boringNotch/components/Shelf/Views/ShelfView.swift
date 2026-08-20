@@ -16,9 +16,9 @@ struct ShelfView: View {
     private let spacing: CGFloat = 8
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             FileShareView()
-                .aspectRatio(1, contentMode: .fit)
+                .frame(width: 142, height: 154)
                 .environmentObject(vm)
             panel
                 .onDrop(of: [.fileURL, .url, .utf8PlainText, .plainText, .data], isTargeted: $vm.dragDetectorTargeting) { providers in
@@ -59,20 +59,12 @@ struct ShelfView: View {
     }
 
     var panel: some View {
-        RoundedRectangle(cornerRadius: 16)
-            .stroke(
-                vm.dragDetectorTargeting
-                    ? Color.accentColor.opacity(0.9)
-                    : Color.white.opacity(0.1),
-                style: StrokeStyle(lineWidth: 3, lineCap: .round, dash: [10])
-            )
-            .overlay {
-                content
-                    .padding()
-            }
-            .transaction { transaction in
-                transaction.animation = vm.animation
-            }
+        content
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(vm.dragDetectorTargeting ? Color.accentColor.opacity(0.10) : .clear)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
             .contentShape(Rectangle())
             .onTapGesture { selection.clear() }
     }
@@ -93,16 +85,14 @@ struct ShelfView: View {
                         .fontWeight(.medium)
                 }
             } else {
-                ScrollView(.horizontal) {
-                    HStack(spacing: spacing) {
-                        ForEach(tvm.items) { item in
-                            ShelfItemView(item: item)
-                                .environmentObject(quickLookService)
-                        }
+                let columns = Array(repeating: GridItem(.fixed(88), spacing: spacing), count: 4)
+                LazyVGrid(columns: columns, alignment: .center, spacing: spacing) {
+                    ForEach(Array(tvm.items.prefix(8))) { item in
+                        ShelfItemView(item: item)
+                            .environmentObject(quickLookService)
                     }
                 }
-                .padding(-spacing)
-                .scrollIndicators(.never)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 .onDrop(of: [.fileURL, .url, .utf8PlainText, .plainText, .data], isTargeted: $vm.dragDetectorTargeting) { providers in
                     handleDrop(providers: providers)
                 }

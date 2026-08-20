@@ -2,20 +2,11 @@ import SwiftUI
 
 struct UtilityDashboardView: View {
     @ObservedObject private var clipboard = ClipboardHistoryManager.shared
-    @ObservedObject private var proxy = ClashVergeProxyManager.shared
 
     var body: some View {
-        HStack(spacing: 10) {
-            clipboardCard
-                .frame(width: 310)
-
-            VStack(spacing: 8) {
-                systemProxyCard
-                nodeCard
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.top, 4)
+        clipboardCard
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.top, 4)
     }
 
     private var clipboardCard: some View {
@@ -67,7 +58,7 @@ struct UtilityDashboardView: View {
                                         .foregroundStyle(.tertiary)
                                 }
                                 .padding(8)
-                                .frame(width: 92, height: 88, alignment: .leading)
+                                .frame(width: 132, height: 104, alignment: .leading)
                                 .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
                             }
                             .buttonStyle(.plain)
@@ -85,85 +76,4 @@ struct UtilityDashboardView: View {
         .background(.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 14))
     }
 
-    private var systemProxyCard: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack {
-                Text("System Proxy")
-                    .font(.system(size: 12, weight: .semibold))
-                Spacer()
-                Toggle("", isOn: Binding(
-                    get: { proxy.isSystemProxyEnabled },
-                    set: { enabled in Task { await proxy.setSystemProxyEnabled(enabled) } }
-                ))
-                .labelsHidden()
-                .toggleStyle(.switch)
-                .controlSize(.mini)
-                .disabled(proxy.isChanging || !proxy.isInstalled)
-            }
-
-            Text(proxy.isSystemProxyEnabled ? "System proxy is on" : "System proxy is off")
-                .font(.caption)
-                .foregroundStyle(proxy.isSystemProxyEnabled ? .green : .secondary)
-        }
-        .padding(9)
-        .frame(maxWidth: .infinity, minHeight: 65, alignment: .topLeading)
-        .background(.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 14))
-    }
-
-    private var nodeCard: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Label("Node & Latency", systemImage: "point.3.connected.trianglepath.dotted")
-                    .font(.system(size: 12, weight: .semibold))
-                Spacer()
-                if proxy.isLoadingNodes { ProgressView().controlSize(.mini) }
-            }
-
-            HStack(spacing: 6) {
-                Picker("Node", selection: Binding(
-                    get: { proxy.selectedNode },
-                    set: { node in Task { await proxy.selectNode(node) } }
-                )) {
-                    if proxy.availableNodes.isEmpty {
-                        Text("No nodes available").tag("")
-                    } else {
-                        ForEach(proxy.availableNodes, id: \.self) { node in
-                            Text(node).tag(node)
-                        }
-                    }
-                }
-                .labelsHidden()
-                .frame(maxWidth: .infinity)
-                .disabled(proxy.availableNodes.isEmpty)
-
-                Button {
-                    Task { await proxy.testSelectedNodeDelay() }
-                } label: {
-                    if proxy.isTestingDelay {
-                        ProgressView().controlSize(.mini)
-                    } else if let delay = proxy.selectedNodeDelay {
-                        Text("\(delay) ms")
-                    } else {
-                        Label("Test Latency", systemImage: "speedometer")
-                    }
-                }
-                .disabled(proxy.selectedNode.isEmpty || proxy.isTestingDelay)
-            }
-            .controlSize(.small)
-
-            if let errorMessage = proxy.errorMessage {
-                Text(errorMessage)
-                    .font(.system(size: 9))
-                    .foregroundStyle(.red)
-                    .lineLimit(2)
-            } else if !proxy.isInstalled {
-                Text("Clash Verge is not installed.")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(9)
-        .frame(maxWidth: .infinity, minHeight: 65, alignment: .topLeading)
-        .background(.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 14))
-    }
 }

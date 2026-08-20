@@ -26,12 +26,6 @@ struct DynamicNotchApp: App {
             Button("Open Tools") {
                 appDelegate.openTools()
             }
-            Button(ClashVergeProxyManager.shared.isSystemProxyEnabled ? "Disable Clash Verge System Proxy" : "Enable Clash Verge System Proxy") {
-                Task {
-                    await ClashVergeProxyManager.shared.toggleSystemProxy()
-                }
-            }
-            Divider()
             Button("Settings") {
                 appDelegate.openSettings()
             }
@@ -438,12 +432,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         KeyboardShortcuts.onKeyDown(for: .clipboardHistoryPanel) { [weak self] in
             Task { @MainActor in
                 self?.openTools()
-            }
-        }
-
-        KeyboardShortcuts.onKeyDown(for: .toggleClashVergeSystemProxy) {
-            Task { @MainActor in
-                await ClashVergeProxyManager.shared.toggleSystemProxy()
             }
         }
 

@@ -10,6 +10,7 @@ import AppKit
 @MainActor
 final class ShelfStateViewModel: ObservableObject {
     static let shared = ShelfStateViewModel()
+    static let maximumItemCount = 8
 
     @Published private(set) var items: [ShelfItem] = [] {
         didSet { ShelfPersistenceService.shared.save(items) }
@@ -24,7 +25,7 @@ final class ShelfStateViewModel: ObservableObject {
     private var updateTask: Task<Void, Never>?
 
     private init() {
-        items = ShelfPersistenceService.shared.load()
+        items = Array(ShelfPersistenceService.shared.load().prefix(Self.maximumItemCount))
     }
 
 
@@ -33,7 +34,7 @@ final class ShelfStateViewModel: ObservableObject {
         var merged = items
         // Deduplicate by identityKey while preserving order (existing first)
         var seen: Set<String> = Set(merged.map { $0.identityKey })
-        for it in newItems {
+        for it in newItems where merged.count < Self.maximumItemCount {
             let key = it.identityKey
             if !seen.contains(key) {
                 merged.append(it)

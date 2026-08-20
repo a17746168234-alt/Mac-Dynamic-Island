@@ -18,7 +18,7 @@ struct TabButton: View {
             Image(systemName: icon)
                 .imageScale(.medium)
                 .foregroundColor(selected ? .blue : .gray)
-                .frame(width: 30, height: 30)
+                .frame(width: 32, height: 32)
                 .contentShape(Capsule())
         }
         .buttonStyle(PlainButtonStyle())
