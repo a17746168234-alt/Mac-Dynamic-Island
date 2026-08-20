@@ -17,7 +17,7 @@ struct TabButton: View {
         Button(action: onClick) {
             Image(systemName: icon)
                 .imageScale(.medium)
-                .scaleEffect(icon == "doc.on.clipboard" ? 0.64 : 1)
+                .scaleEffect(1)
                 .foregroundColor(selected ? .blue : .gray)
                 .frame(width: 32, height: 32)
                 .contentShape(Capsule())

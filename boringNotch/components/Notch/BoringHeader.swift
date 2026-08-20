@@ -43,7 +43,7 @@ struct BoringHeader: View {
                             .transition(.scale(scale: 0.8).combined(with: .opacity))
                     } else {
                         UtilityTabSelectionView()
-                            .offset(x: 18)
+                            .offset(x: 8)
                         if Defaults[.showBatteryIndicator] {
                             BoringBatteryView(
                                 batteryWidth: 30,
