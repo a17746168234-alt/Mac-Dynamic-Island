@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          VERSION=$(sed -n 's/.*MARKETING_VERSION = \([0-9][0-9.]*\);/\1/p' boringNotch.xcodeproj/project.pbxproj | sort -u)
+          VERSION=$(awk '/MARKETING_VERSION = / { value=$3; gsub(/;/, "", value); print value }' MacDynamicIsland.xcodeproj/project.pbxproj | sort -u)
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Unable to determine a single semantic version: $VERSION" >&2
             exit 1
@@ -39,10 +39,11 @@ jobs:
       - name: Check whether this version is already published
         id: published
         env:
+          GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
         shell: bash
         run: |
-          if git rev-parse --verify --quiet "refs/tags/$TAG" >/dev/null; then
+          if gh release view "$TAG" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
@@ -56,8 +57,14 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         shell: bash
         run: |
-          gh release create "$TAG" \
-            --target "$GITHUB_SHA" \
-            --title "Mac灵动岛 $VERSION" \
-            --generate-notes \
-            --notes-start-tag "v1.0.2"
+          if git rev-parse --verify --quiet "refs/tags/$TAG" >/dev/null; then
+            gh release create "$TAG" \
+              --verify-tag \
+              --title "Mac灵动岛 $VERSION" \
+              --generate-notes
+          else
+            gh release create "$TAG" \
+              --target "$GITHUB_SHA" \
+              --title "Mac灵动岛 $VERSION" \
+              --generate-notes
+          fi

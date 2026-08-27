@@ -53,3 +53,6 @@ build/
 *.xcarchive
 *.dSYM
 
+# Local release and recovery artifacts
+/recovery/
+/安装包/

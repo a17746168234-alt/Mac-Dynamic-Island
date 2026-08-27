@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 
 
-PROJECT_FILE = Path(__file__).resolve().parents[1] / "boringNotch.xcodeproj" / "project.pbxproj"
+PROJECT_FILE = Path(__file__).resolve().parents[1] / "MacDynamicIsland.xcodeproj" / "project.pbxproj"
 VERSION_PATTERN = re.compile(r"(MARKETING_VERSION = )(\d+)\.(\d+)\.(\d+)(;)")
 BUILD_PATTERN = re.compile(r"(CURRENT_PROJECT_VERSION = )(\d+)(;)")
 
@@ -23,6 +23,21 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def next_version(old_version: tuple[int, int, int], kind: str) -> tuple[int, int, int]:
+    major, minor, patch = old_version
+    if kind == "patch":
+        if patch < 9:
+            return major, minor, patch + 1
+        if minor < 9:
+            return major, minor + 1, 0
+        return major + 1, 0, 0
+    if kind == "minor":
+        return (major, minor + 1, 0) if minor < 9 else (major + 1, 0, 0)
+    if kind == "major":
+        return major + 1, 0, 0
+    raise ValueError(f"Unsupported version kind: {kind}")
+
+
 def main() -> None:
     args = parse_args()
     text = PROJECT_FILE.read_text(encoding="utf-8")
@@ -33,18 +48,12 @@ def main() -> None:
 
     old_version = versions.pop()
     old_build = builds.pop()
-    major, minor, patch = old_version
-
     if args.kind == "set":
         if not args.version or not re.fullmatch(r"\d+\.\d+\.\d+", args.version):
-            raise SystemExit("'set' requires an X.Y.Z version")
+            raise SystemExit("set requires an X.Y.Z version")
         new_version = tuple(map(int, args.version.split(".")))
-    elif args.kind == "patch":
-        new_version = (major, minor, patch + 1)
-    elif args.kind == "minor":
-        new_version = (major, minor + 1, 0)
     else:
-        new_version = (major + 1, 0, 0)
+        new_version = next_version(old_version, args.kind)
 
     new_version_text = ".".join(map(str, new_version))
     updated = VERSION_PATTERN.sub(lambda match: f"{match.group(1)}{new_version_text}{match.group(5)}", text)

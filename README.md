@@ -74,7 +74,7 @@ This is the quickest and easiest method. It only requires a single command and w
 After moving Boring Notch to your Applications folder, run:
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/boringNotch.app
+xattr -dr com.apple.quarantine /Applications/Mac灵动岛.app
 ```
 
 Then open the app normally.
@@ -151,7 +151,7 @@ brew install --cask TheBoredTeam/boring-notch/boring-notch
 
 2. **Open the Project in Xcode**:
    ```bash
-   open boringNotch.xcodeproj
+   open MacDynamicIsland.xcodeproj
    ```
 
 3. **Build and Run**:
@@ -200,4 +200,3 @@ For a full list of licenses and attributions, please see the [Third-Party Licens
 
 - **SwiftUI**: For making us look like coding wizards.
 - **You**: For being awesome and checking out **boring.notch**!
-
