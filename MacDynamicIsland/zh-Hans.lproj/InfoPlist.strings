@@ -3,5 +3,4 @@
 "NSAppleEventsUsageDescription" = "Mac灵动岛使用自动化来控制音乐播放。";
 "NSCalendarsUsageDescription" = "Mac灵动岛使用日历来显示你的日程。";
 "NSCameraUsageDescription" = "Mac灵动岛使用相机来显示实时镜像。";
-"NSBluetoothAlwaysUsageDescription" = "Mac灵动岛会显示 AirPods 和蓝牙设备的连接及电量状态。";
 "NSRemindersUsageDescription" = "Mac灵动岛使用提醒事项在日历中显示你的提醒。";

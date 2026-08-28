@@ -76,53 +76,6 @@ struct BatteryView: View {
     }
 }
 
-struct BluetoothDeviceBatteryNotificationView: View {
-    let device: BluetoothDeviceStatus
-    let closedNotchWidth: CGFloat
-
-    private var deviceIcon: String {
-        device.isAirPods ? "airpodspro" : "headphones"
-    }
-
-    var body: some View {
-        HStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Image(systemName: deviceIcon)
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(.white)
-                    .frame(width: 24)
-
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(device.name)
-                        .font(.system(size: 12, weight: .semibold))
-                        .lineLimit(1)
-                    Text("已连接")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .frame(width: 174, alignment: .leading)
-
-            Rectangle()
-                .fill(.black)
-                .frame(width: closedNotchWidth + 10)
-
-            HStack(spacing: 6) {
-                Image(systemName: "battery.100")
-                    .foregroundStyle(.green)
-                Text(device.batteryDescription ?? "电量暂不可用")
-                    .font(.system(size: 11, weight: .medium))
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
-            }
-            .frame(width: 174, alignment: .trailing)
-        }
-        .padding(.horizontal, 10)
-        .foregroundStyle(.white)
-    }
-}
-
 struct ScaleButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label

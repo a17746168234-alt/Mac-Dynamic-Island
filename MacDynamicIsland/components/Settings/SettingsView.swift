@@ -322,13 +322,8 @@ struct Charge: View {
                 Defaults.Toggle(key: .showPowerStatusNotifications) {
                     Text("Show power status notifications")
                 }
-                Defaults.Toggle(key: .showBluetoothBatteryNotifications) {
-                    Text("连接蓝牙设备时显示电量")
-                }
             } header: {
                 Text("General")
-            } footer: {
-                Text("支持读取电量的耳机或蓝牙设备连接后，会在灵动岛短暂显示设备电量。")
             }
             Section {
                 Defaults.Toggle(key: .showBatteryPercentage) {

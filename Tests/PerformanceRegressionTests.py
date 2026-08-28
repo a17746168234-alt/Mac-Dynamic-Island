@@ -36,34 +36,11 @@ class PerformanceRegressionTests(unittest.TestCase):
         self.assertIn("manager.stopMonitoring()", view)
 
     def test_disabled_background_features_really_sleep(self):
-        bluetooth = self.source("MacDynamicIsland/managers/BluetoothDeviceStatusManager.swift")
         clipboard = self.source("MacDynamicIsland/managers/ClipboardHistoryManager.swift")
 
-        self.assertNotIn("withTimeInterval: 8", bluetooth)
-        self.assertIn("setEnabled(Defaults[.showBluetoothBatteryNotifications])", bluetooth)
-        self.assertIn("connectNotification?.unregister()", bluetooth)
         self.assertIn("timer.tolerance = 0.25", clipboard)
         self.assertIn("maximumStoredPayloadSize = 16 * 1_024 * 1_024", clipboard)
         self.assertIn("stopMonitoring()", clipboard)
-
-    def test_bluetooth_registry_scan_never_blocks_the_settings_thread(self):
-        bluetooth = self.source("MacDynamicIsland/managers/BluetoothDeviceStatusManager.swift")
-
-        refresh = bluetooth[
-            bluetooth.index("func refresh()"):
-            bluetooth.index("private func applyRefresh")
-        ]
-        self.assertIn("Task.detached(priority: .utility)", refresh)
-        self.assertLess(
-            refresh.index("Task.detached(priority: .utility)"),
-            refresh.index("Self.readBatteryRecords()"),
-        )
-        self.assertIn(
-            "nonisolated private static func readBatteryRecords()",
-            bluetooth,
-        )
-        self.assertIn("refreshTask?.cancel()", bluetooth)
-        self.assertIn("generation == refreshGeneration", bluetooth)
 
     def test_large_root_views_are_not_forced_into_offscreen_groups(self):
         content = self.source("MacDynamicIsland/ContentView.swift")

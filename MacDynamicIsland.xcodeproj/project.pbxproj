@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		C0D3E01030A0000100000010 /* ClipboardHistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D3E02030A0000100000020 /* ClipboardHistoryManager.swift */; };
-		C0D3E01130A0000100000011 /* BluetoothDeviceStatusManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D3E02130A0000100000021 /* BluetoothDeviceStatusManager.swift */; };
 		C0D3E01230A0000100000012 /* ClashVergeProxyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D3E02230A0000100000022 /* ClashVergeProxyManager.swift */; };
 		C0D3E01330A0000100000013 /* UtilityDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D3E02330A0000100000023 /* UtilityDashboardView.swift */; };
 		C0D3E01430A0000100000014 /* DailyTodoManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D3E02430A0000100000024 /* DailyTodoManager.swift */; };
@@ -20,7 +19,6 @@
 		C0D3E03330B0000100000033 /* WeatherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D3E04330B0000100000043 /* WeatherView.swift */; };
 		C0D3E03630B0000100000036 /* WeatherLocationSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D3E04630B0000100000046 /* WeatherLocationSearchService.swift */; };
 		C0D3E03830B0000100000038 /* LyricsSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D3E04830B0000100000048 /* LyricsSupport.swift */; };
-		C0D3E03930B0000100000039 /* BluetoothBatteryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D3E04930B0000100000049 /* BluetoothBatteryModels.swift */; };
 		C0D3E03A30B000010000003A /* PersonalBatteryPrediction.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D3E04A30B000010000004A /* PersonalBatteryPrediction.swift */; };
 		C0D3E03430B0000100000034 /* NotchInteractionPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D3E04430B0000100000044 /* NotchInteractionPolicy.swift */; };
 		C0D3E03530B0000100000035 /* BatteryChargeEstimate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D3E04530B0000100000045 /* BatteryChargeEstimate.swift */; };
@@ -197,7 +195,6 @@
 
 /* Begin PBXFileReference section */
 		C0D3E02030A0000100000020 /* ClipboardHistoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardHistoryManager.swift; sourceTree = "<group>"; };
-		C0D3E02130A0000100000021 /* BluetoothDeviceStatusManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothDeviceStatusManager.swift; sourceTree = "<group>"; };
 		C0D3E02230A0000100000022 /* ClashVergeProxyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClashVergeProxyManager.swift; sourceTree = "<group>"; };
 		C0D3E02330A0000100000023 /* UtilityDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UtilityDashboardView.swift; sourceTree = "<group>"; };
 		C0D3E02430A0000100000024 /* DailyTodoManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyTodoManager.swift; sourceTree = "<group>"; };
@@ -335,7 +332,6 @@
 		C0D3E04330B0000100000043 /* WeatherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherView.swift; sourceTree = "<group>"; };
 		C0D3E04630B0000100000046 /* WeatherLocationSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherLocationSearchService.swift; sourceTree = "<group>"; };
 		C0D3E04830B0000100000048 /* LyricsSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsSupport.swift; sourceTree = "<group>"; };
-		C0D3E04930B0000100000049 /* BluetoothBatteryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothBatteryModels.swift; sourceTree = "<group>"; };
 		C0D3E04A30B000010000004A /* PersonalBatteryPrediction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalBatteryPrediction.swift; sourceTree = "<group>"; };
 		C0D3E04430B0000100000044 /* NotchInteractionPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchInteractionPolicy.swift; sourceTree = "<group>"; };
 		C0D3E04530B0000100000045 /* BatteryChargeEstimate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryChargeEstimate.swift; sourceTree = "<group>"; };
@@ -558,7 +554,6 @@
 				C0D3E02430A0000100000024 /* DailyTodoManager.swift */,
 				C0D3E02630A0000100000026 /* ApplicationLauncherManager.swift */,
 				C0D3E02030A0000100000020 /* ClipboardHistoryManager.swift */,
-				C0D3E02130A0000100000021 /* BluetoothDeviceStatusManager.swift */,
 				C0D3E02230A0000100000022 /* ClashVergeProxyManager.swift */,
 				11D58EA12E760AE100FA8377 /* ImageService.swift */,
 				F38DE6472D8243E2008B5C6D /* BatteryActivityManager.swift */,
@@ -679,7 +674,6 @@
 				C0D3E04530B0000100000045 /* BatteryChargeEstimate.swift */,
 				C0D3E04A30B000010000004A /* PersonalBatteryPrediction.swift */,
 				C0D3E04830B0000100000048 /* LyricsSupport.swift */,
-				C0D3E04930B0000100000049 /* BluetoothBatteryModels.swift */,
 				C0D3E04430B0000100000044 /* NotchInteractionPolicy.swift */,
 				11F748812ECB07A400F841DB /* MusicControlButton.swift */,
 				118D1FD02E98FF5F00A2FF63 /* SharingStateManager.swift */,
@@ -983,13 +977,11 @@
 				C0D3E03330B0000100000033 /* WeatherView.swift in Sources */,
 				C0D3E03630B0000100000036 /* WeatherLocationSearchService.swift in Sources */,
 				C0D3E03830B0000100000038 /* LyricsSupport.swift in Sources */,
-				C0D3E03930B0000100000039 /* BluetoothBatteryModels.swift in Sources */,
 				C0D3E01430A0000100000014 /* DailyTodoManager.swift in Sources */,
 				C0D3E01530A0000100000015 /* DailyTodoView.swift in Sources */,
 				C0D3E01630A0000100000016 /* ApplicationLauncherManager.swift in Sources */,
 				C0D3E01730A0000100000017 /* ApplicationLauncherView.swift in Sources */,
 				C0D3E01030A0000100000010 /* ClipboardHistoryManager.swift in Sources */,
-				C0D3E01130A0000100000011 /* BluetoothDeviceStatusManager.swift in Sources */,
 				C0D3E01230A0000100000012 /* ClashVergeProxyManager.swift in Sources */,
 				C0D3E01330A0000100000013 /* UtilityDashboardView.swift in Sources */,
 				115C12EC2ED3D003009754CA /* OpenNotchHUD.swift in Sources */,
@@ -1128,7 +1120,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 313;
+				CURRENT_PROJECT_VERSION = 314;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BoringNotchXPCHelper/Info.plist;
@@ -1153,7 +1145,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 313;
+				CURRENT_PROJECT_VERSION = 314;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BoringNotchXPCHelper/Info.plist;
@@ -1307,7 +1299,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 313;
+				CURRENT_PROJECT_VERSION = 314;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"MacDynamicIsland/Preview Content\"";
 				DEVELOPMENT_TEAM = "";
@@ -1364,7 +1356,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 313;
+				CURRENT_PROJECT_VERSION = 314;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"MacDynamicIsland/Preview Content\"";
 				DEVELOPMENT_TEAM = "";

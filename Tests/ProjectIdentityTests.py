@@ -34,6 +34,21 @@ class ProjectIdentityTests(unittest.TestCase):
         self.assertIn('appendingPathComponent("boringNotch", isDirectory: true)', shelf)
         self.assertIn('"\\(baseURL)/auth/boringNotch"', youtube)
 
+    def test_bluetooth_feature_is_not_shipped(self):
+        product_sources = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (ROOT / "MacDynamicIsland").rglob("*.swift")
+        )
+        project = (ROOT / "MacDynamicIsland.xcodeproj/project.pbxproj").read_text(
+            encoding="utf-8"
+        )
+        info_plist = (ROOT / "MacDynamicIsland/Info.plist").read_text(encoding="utf-8")
+
+        self.assertNotIn("BluetoothDeviceStatusManager", product_sources + project)
+        self.assertNotIn("showBluetoothBatteryNotifications", product_sources)
+        self.assertNotIn("IOBluetooth", product_sources + project)
+        self.assertNotIn("NSBluetoothAlwaysUsageDescription", info_plist)
+
 
 if __name__ == "__main__":
     unittest.main()

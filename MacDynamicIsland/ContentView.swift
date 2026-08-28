@@ -22,7 +22,6 @@ struct ContentView: View {
     @ObservedObject var coordinator = BoringViewCoordinator.shared
     @ObservedObject var musicManager = MusicManager.shared
     @ObservedObject var batteryModel = BatteryStatusViewModel.shared
-    @ObservedObject var bluetoothManager = BluetoothDeviceStatusManager.shared
     @ObservedObject var brightnessManager = BrightnessManager.shared
     @ObservedObject var volumeManager = VolumeManager.shared
     @State private var hoverTask: Task<Void, Never>?
@@ -40,8 +39,6 @@ struct ContentView: View {
     @Namespace var albumArtNamespace
 
     @Default(.useMusicVisualizer) var useMusicVisualizer
-
-    @Default(.showBluetoothBatteryNotifications) var showBluetoothBatteryNotifications
 
     @Default(.showNotHumanFace) var showNotHumanFace
 
@@ -108,10 +105,6 @@ struct ContentView: View {
             && vm.notchState == .closed && Defaults[.showPowerStatusNotifications]
         {
             chinWidth = 640
-        } else if bluetoothManager.transientDevice != nil
-            && vm.notchState == .closed && Defaults[.showBluetoothBatteryNotifications]
-        {
-            chinWidth = 560
         } else if (!coordinator.expandingView.show || coordinator.expandingView.type == .music)
             && vm.notchState == .closed && (musicManager.isPlaying || !musicManager.isPlayerIdle)
             && coordinator.musicLiveActivityEnabled && !vm.hideOnClosed
@@ -249,16 +242,12 @@ struct ContentView: View {
         .preferredColorScheme(.dark)
         .environmentObject(vm)
         .onAppear {
-            bluetoothManager.setEnabled(showBluetoothBatteryNotifications)
             if coordinator.currentView == .settings {
                 beginSettingsHoverMonitoring()
             }
         }
         .onDisappear {
             endSettingsHoverMonitoring()
-        }
-        .onChange(of: showBluetoothBatteryNotifications) { _, isEnabled in
-            bluetoothManager.setEnabled(isEnabled)
         }
         .onChange(of: coordinator.currentView) { oldView, newView in
             viewTransitionTask?.cancel()
@@ -373,15 +362,6 @@ struct ContentView: View {
                             .frame(width: 84, alignment: .trailing)
                         }
                         .frame(height: vm.effectiveClosedNotchHeight, alignment: .center)
-                      } else if let bluetoothDevice = bluetoothManager.transientDevice,
-                                vm.notchState == .closed,
-                                Defaults[.showBluetoothBatteryNotifications] {
-                          BluetoothDeviceBatteryNotificationView(
-                              device: bluetoothDevice,
-                              closedNotchWidth: vm.closedNotchSize.width
-                          )
-                          .frame(height: vm.effectiveClosedNotchHeight, alignment: .center)
-                          .transition(.opacity.combined(with: .scale(scale: 0.96)))
                       } else if coordinator.sneakPeek.show && Defaults[.inlineHUD] && (coordinator.sneakPeek.type != .music) && (coordinator.sneakPeek.type != .battery) && vm.notchState == .closed {
                           InlineHUD(type: $coordinator.sneakPeek.type, value: $coordinator.sneakPeek.value, icon: $coordinator.sneakPeek.icon, hoverAnimation: $isHovering, gestureProgress: $gestureProgress)
                               .transition(.opacity)
