@@ -13,10 +13,12 @@ final class BluetoothDeviceStatusManager: NSObject, ObservableObject {
 
     private var transientDeviceTask: Task<Void, Never>?
     private var delayedRefreshTask: Task<Void, Never>?
+    private var refreshTask: Task<Void, Never>?
     private var connectNotification: IOBluetoothUserNotification?
     private var disconnectNotifications: [String: IOBluetoothUserNotification] = [:]
     private var pendingConnectionIDs: Set<String> = []
     private var hasCompletedInitialRefresh = false
+    private var refreshGeneration = 0
 
     private override init() {
         super.init()
@@ -26,6 +28,7 @@ final class BluetoothDeviceStatusManager: NSObject, ObservableObject {
     deinit {
         transientDeviceTask?.cancel()
         delayedRefreshTask?.cancel()
+        refreshTask?.cancel()
         connectNotification?.unregister()
         disconnectNotifications.values.forEach { $0.unregister() }
     }
@@ -53,6 +56,9 @@ final class BluetoothDeviceStatusManager: NSObject, ObservableObject {
         transientDeviceTask = nil
         delayedRefreshTask?.cancel()
         delayedRefreshTask = nil
+        refreshTask?.cancel()
+        refreshTask = nil
+        refreshGeneration &+= 1
         connectNotification?.unregister()
         connectNotification = nil
         disconnectNotifications.values.forEach { $0.unregister() }
@@ -69,28 +75,40 @@ final class BluetoothDeviceStatusManager: NSObject, ObservableObject {
 
     func refresh() {
         guard Defaults[.showBluetoothBatteryNotifications] else { return }
-        let batteryRecords = readBatteryRecords()
         let devices = (IOBluetoothDevice.pairedDevices() as? [IOBluetoothDevice] ?? [])
             .filter { $0.isConnected() }
+        let connectedDevices = devices.map { device in
+            let name = device.nameOrAddress
+                ?? device.addressString
+                ?? String(localized: "Bluetooth Device")
+            return ConnectedDevice(id: device.addressString ?? name, name: name)
+        }
 
-        let refreshedDevices = devices.map { device in
-            let name = device.nameOrAddress ?? device.addressString ?? String(localized: "Bluetooth Device")
-            let record = batteryRecords.first { record in
-                namesLikelyMatch(record.name, name)
-            }
-            return BluetoothDeviceStatus(
-                id: device.addressString ?? name,
-                name: name,
-                battery: record?.battery,
-                leftBattery: record?.leftBattery,
-                rightBattery: record?.rightBattery,
-                caseBattery: record?.caseBattery
+        updateDisconnectNotifications(for: devices)
+        refreshGeneration &+= 1
+        let generation = refreshGeneration
+        refreshTask?.cancel()
+        refreshTask = Task.detached(priority: .utility) { [connectedDevices] in
+            let batteryRecords = Self.readBatteryRecords()
+            guard !Task.isCancelled else { return }
+            let refreshedDevices = Self.merge(
+                connectedDevices: connectedDevices,
+                batteryRecords: batteryRecords
             )
+            guard !Task.isCancelled else { return }
+            await MainActor.run { [weak self] in
+                self?.applyRefresh(refreshedDevices, generation: generation)
+            }
         }
-        .sorted { lhs, rhs in
-            if lhs.isAirPods != rhs.isAirPods { return lhs.isAirPods }
-            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
-        }
+    }
+
+    private func applyRefresh(
+        _ refreshedDevices: [BluetoothDeviceStatus],
+        generation: Int
+    ) {
+        guard generation == refreshGeneration,
+              Defaults[.showBluetoothBatteryNotifications]
+        else { return }
 
         let previousIDs = Set(connectedDevices.map(\.id))
         let refreshedIDs = Set(refreshedDevices.map(\.id))
@@ -101,7 +119,6 @@ final class BluetoothDeviceStatusManager: NSObject, ObservableObject {
         if connectedDevices != refreshedDevices {
             connectedDevices = refreshedDevices
         }
-        updateDisconnectNotifications(for: devices)
         pendingConnectionIDs.formIntersection(refreshedIDs)
 
         if Defaults[.showBluetoothBatteryNotifications],
@@ -182,7 +199,7 @@ final class BluetoothDeviceStatusManager: NSObject, ObservableObject {
         }
     }
 
-    private struct BatteryRecord {
+    private struct BatteryRecord: Sendable {
         let name: String
         let battery: Int?
         let leftBattery: Int?
@@ -190,7 +207,12 @@ final class BluetoothDeviceStatusManager: NSObject, ObservableObject {
         let caseBattery: Int?
     }
 
-    private func readBatteryRecords() -> [BatteryRecord] {
+    private struct ConnectedDevice: Sendable {
+        let id: String
+        let name: String
+    }
+
+    nonisolated private static func readBatteryRecords() -> [BatteryRecord] {
         var iterator: io_iterator_t = 0
         guard IORegistryCreateIterator(
             kIOMainPortDefault,
@@ -214,7 +236,10 @@ final class BluetoothDeviceStatusManager: NSObject, ObservableObject {
         return records
     }
 
-    private func batteryRecord(name: String, values: [String: Any]) -> BatteryRecord? {
+    nonisolated private static func batteryRecord(
+        name: String,
+        values: [String: Any]
+    ) -> BatteryRecord? {
         let battery = integerValue(in: values, keys: ["BatteryPercent", "BatteryPercentSingle"])
         let left = integerValue(in: values, keys: ["BatteryPercentLeft", "LeftBattery", "BatteryPercentLeftBud"])
         let right = integerValue(in: values, keys: ["BatteryPercentRight", "RightBattery", "BatteryPercentRightBud"])
@@ -223,7 +248,10 @@ final class BluetoothDeviceStatusManager: NSObject, ObservableObject {
         return BatteryRecord(name: name, battery: battery, leftBattery: left, rightBattery: right, caseBattery: caseBattery)
     }
 
-    private func integerValue(in values: [String: Any], keys: [String]) -> Int? {
+    nonisolated private static func integerValue(
+        in values: [String: Any],
+        keys: [String]
+    ) -> Int? {
         for key in keys {
             if let number = values[key] as? NSNumber { return number.intValue }
             if let string = values[key] as? String {
@@ -233,14 +261,40 @@ final class BluetoothDeviceStatusManager: NSObject, ObservableObject {
         return nil
     }
 
-    private func stringValue(in values: [String: Any], keys: [String]) -> String? {
+    nonisolated private static func stringValue(
+        in values: [String: Any],
+        keys: [String]
+    ) -> String? {
         for key in keys {
             if let value = values[key] as? String, !value.isEmpty { return value }
         }
         return nil
     }
 
-    private func namesLikelyMatch(_ lhs: String, _ rhs: String) -> Bool {
+    nonisolated private static func merge(
+        connectedDevices: [ConnectedDevice],
+        batteryRecords: [BatteryRecord]
+    ) -> [BluetoothDeviceStatus] {
+        connectedDevices.map { device in
+            let record = batteryRecords.first { record in
+                namesLikelyMatch(record.name, device.name)
+            }
+            return BluetoothDeviceStatus(
+                id: device.id,
+                name: device.name,
+                battery: record?.battery,
+                leftBattery: record?.leftBattery,
+                rightBattery: record?.rightBattery,
+                caseBattery: record?.caseBattery
+            )
+        }
+        .sorted { lhs, rhs in
+            if lhs.isAirPods != rhs.isAirPods { return lhs.isAirPods }
+            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+        }
+    }
+
+    nonisolated private static func namesLikelyMatch(_ lhs: String, _ rhs: String) -> Bool {
         let normalize: (String) -> String = {
             $0.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
                 .filter { $0.isLetter || $0.isNumber }

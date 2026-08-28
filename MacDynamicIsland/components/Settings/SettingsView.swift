@@ -24,10 +24,8 @@ struct SettingsView: View {
                 Label("Calendar", systemImage: "calendar").tag("Calendar")
                 Label("待办", systemImage: "checklist").tag("Todo")
                 Label("天气", systemImage: "cloud.sun").tag("天气")
-                Label("Application Launcher", systemImage: "square.grid.3x3.fill").tag("Launcher")
                 Label("Battery", systemImage: "battery.100.bolt").tag("Battery")
                 Label("Shelf", systemImage: "books.vertical").tag("Shelf")
-                Label("续航预测", systemImage: "chart.line.uptrend.xyaxis").tag("续航预测")
                 Label("Advanced", systemImage: "gearshape.2").tag("Advanced")
                 Label("About", systemImage: "info.circle").tag("About")
             }
@@ -63,14 +61,10 @@ struct SettingsView: View {
                         TodoSettings()
                     case "天气":
                         WeatherSettings()
-                    case "Launcher":
-                        LauncherSettings()
                     case "Battery":
                         Charge()
                     case "Shelf":
                         Shelf()
-                    case "续航预测":
-                        BatteryPredictionSettings()
                     case "Advanced":
                         Advanced()
                     case "About":
@@ -300,6 +294,25 @@ struct GeneralSettings: View {
 }
 
 struct Charge: View {
+    @ObservedObject private var batteryModel = BatteryStatusViewModel.shared
+    @AppStorage(PersonalBatteryPredictionPreferences.enabledKey)
+    private var predictionEnabled = true
+    @State private var showingResetConfirmation = false
+
+    private var snapshot: BatteryPredictionSnapshot {
+        batteryModel.predictionSnapshot
+    }
+
+    private var predictionHeadline: String {
+        if batteryModel.isPluggedIn { return "已连接电源" }
+        return durationText(snapshot.predictedMinutes)
+    }
+
+    private var predictionStatus: String {
+        if !predictionEnabled { return "已关闭" }
+        return snapshot.isPersonalized ? "个性化预测" : "正在学习"
+    }
+
     var body: some View {
         Form {
             Section {
@@ -327,14 +340,178 @@ struct Charge: View {
             } header: {
                 Text("Battery Information")
             }
+
+            Section {
+                Toggle("启用个性化续航预测", isOn: $predictionEnabled)
+                    .tint(.effectiveAccent)
+
+                HStack(alignment: .center, spacing: 16) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.effectiveAccent.opacity(0.16))
+                            .frame(width: 54, height: 54)
+                        Image(systemName: "battery.75percent")
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundStyle(Color.effectiveAccent)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(predictionHeadline)
+                            .font(.title2.bold())
+                            .monospacedDigit()
+                        Text(predictionEnabled ? predictionRangeText : "当前使用电池控制器估算")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer(minLength: 12)
+
+                    Text(predictionStatus)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(snapshot.isPersonalized ? Color.green : Color.secondary)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(Color.white.opacity(0.07), in: Capsule())
+                }
+                .padding(.vertical, 6)
+            } header: {
+                Text("续航预测")
+            } footer: {
+                Text("预测会综合电池控制器、最近耗电速度和你在相似使用场景下的本机历史；数据不足时自动使用控制器结果。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("学习进度")
+                        Spacer()
+                        Text(confidenceText)
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                    }
+                    ProgressView(value: snapshot.confidence, total: 1)
+                        .tint(.effectiveAccent)
+                }
+
+                HStack(spacing: 10) {
+                    predictionMetric(
+                        title: "学习天数",
+                        value: "\(snapshot.learningDays) 天",
+                        icon: "calendar"
+                    )
+                    predictionMetric(
+                        title: "有效样本",
+                        value: "\(snapshot.sampleCount)",
+                        icon: "waveform.path.ecg"
+                    )
+                    predictionMetric(
+                        title: "当前场景",
+                        value: snapshot.usageCategory.displayName,
+                        icon: "macbook"
+                    )
+                }
+
+                HStack {
+                    Label("控制器基准", systemImage: "cpu")
+                    Spacer()
+                    Text(durationText(snapshot.controllerMinutes))
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+            } header: {
+                Text("本机学习状态")
+            } footer: {
+                Text(snapshot.learningDays < 2 ? "至少跨两天积累有效样本后，个人习惯才会逐步参与预测。" : "使用时间越长，模型越能适应你的工作时段和常用负载。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Label("所有学习数据仅保存在这台 Mac，不上传云端。", systemImage: "lock.shield")
+                    .foregroundStyle(.secondary)
+
+                Button(role: .destructive) {
+                    showingResetConfirmation = true
+                } label: {
+                    Label("清除学习记录", systemImage: "trash")
+                }
+                .disabled(snapshot.sampleCount == 0)
+            } header: {
+                Text("数据与隐私")
+            } footer: {
+                Text("只记录使用类别、时间段、低电量模式、显示器数量和放电速率，不记录应用名称、文件、网页或输入内容。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .onAppear {
+            batteryModel.refreshBatteryInfo()
             Task { @MainActor in
                 await XPCHelperClient.shared.isAccessibilityAuthorized()
             }
         }
+        .onChange(of: predictionEnabled) { _, enabled in
+            batteryModel.setPersonalPredictionEnabled(enabled)
+        }
+        .confirmationDialog(
+            "清除续航预测历史？",
+            isPresented: $showingResetConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("清除学习记录", role: .destructive) {
+                batteryModel.resetPersonalPredictionHistory()
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("清除后会立即回到电池控制器估算，并重新开始本机学习。")
+        }
         .accentColor(.effectiveAccent)
         .navigationTitle("Battery")
+        .scrollIndicators(.visible)
+    }
+
+    private var predictionRangeText: String {
+        guard !batteryModel.isPluggedIn,
+              snapshot.lowerBoundMinutes > 0,
+              snapshot.upperBoundMinutes > 0 else {
+            return "拔下电源后开始估算"
+        }
+        return "常用强度范围 \(durationText(snapshot.lowerBoundMinutes))～\(durationText(snapshot.upperBoundMinutes))"
+    }
+
+    private var confidenceText: String {
+        snapshot.isPersonalized
+            ? "可信度 \(Int((snapshot.confidence * 100).rounded()))%"
+            : "建立个人基线中"
+    }
+
+    @ViewBuilder
+    private func predictionMetric(title: String, value: String, icon: String) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Label(title, systemImage: icon)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.body.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private func durationText(_ minutes: Int) -> String {
+        guard minutes > 0 else { return "正在估算" }
+        let hours = minutes / 60
+        let remainingMinutes = minutes % 60
+        if hours > 0, remainingMinutes > 0 {
+            return "\(hours)小时\(remainingMinutes)分钟"
+        }
+        if hours > 0 { return "\(hours)小时" }
+        return "\(remainingMinutes)分钟"
     }
 }
 
@@ -819,30 +996,6 @@ struct TodoSettings: View {
     }
 }
 
-struct LauncherSettings: View {
-    @Default(.showApplicationLauncher) private var showApplicationLauncher
-    @ObservedObject private var coordinator = BoringViewCoordinator.shared
-
-    var body: some View {
-        Form {
-            Section {
-                Defaults.Toggle(key: .showApplicationLauncher) {
-                    Text("Show application launcher")
-                }
-            } footer: {
-                Text("Show or hide the launcher button in the top-left tab bar.")
-            }
-        }
-        .onChange(of: showApplicationLauncher) { _, isShown in
-            if !isShown, coordinator.currentView == .launcher {
-                coordinator.currentView = .home
-            }
-        }
-        .accentColor(.effectiveAccent)
-        .navigationTitle("Application Launcher")
-    }
-}
-
 func lighterColor(from nsColor: NSColor, amount: CGFloat = 0.14) -> Color {
     let srgb = nsColor.usingColorSpace(.sRGB) ?? nsColor
     var (r, g, b, a): (CGFloat, CGFloat, CGFloat, CGFloat) = (0,0,0,0)
@@ -938,9 +1091,6 @@ struct Shelf: View {
                 }
                 Defaults.Toggle(key: .copyOnDrag) {
                     Text("Copy items on drag")
-                }
-                Defaults.Toggle(key: .autoRemoveShelfItems) {
-                    Text("Remove from shelf after dragging")
                 }
 
             } header: {
@@ -1154,12 +1304,19 @@ struct Shelf: View {
 struct Appearance: View {
     @ObservedObject var coordinator = BoringViewCoordinator.shared
     @Default(.sliderColor) var sliderColor
+    @Default(.showApplicationLauncher) private var showApplicationLauncher
+
     var body: some View {
         Form {
             Section {
                 Toggle("Always show tabs", isOn: $coordinator.alwaysShowTabs)
+                Defaults.Toggle(key: .showApplicationLauncher) {
+                    Text("Show application launcher")
+                }
             } header: {
                 Text("General")
+            } footer: {
+                Text("Show or hide the launcher button in the top-left tab bar.")
             }
 
             Section {
@@ -1188,6 +1345,11 @@ struct Appearance: View {
                 HStack {
                     Text("Additional features")
                 }
+            }
+        }
+        .onChange(of: showApplicationLauncher) { _, isShown in
+            if !isShown, coordinator.currentView == .launcher {
+                coordinator.currentView = .home
             }
         }
         .accentColor(.effectiveAccent)
@@ -1643,199 +1805,6 @@ private struct ShortcutSettingsSection: View {
                 .foregroundStyle(.secondary)
                 .font(.caption)
         }
-    }
-}
-
-struct BatteryPredictionSettings: View {
-    @ObservedObject private var batteryModel = BatteryStatusViewModel.shared
-    @AppStorage(PersonalBatteryPredictionPreferences.enabledKey)
-    private var predictionEnabled = true
-    @State private var showingResetConfirmation = false
-
-    private var snapshot: BatteryPredictionSnapshot {
-        batteryModel.predictionSnapshot
-    }
-
-    private var predictionHeadline: String {
-        if batteryModel.isPluggedIn { return "已连接电源" }
-        return durationText(snapshot.predictedMinutes)
-    }
-
-    private var predictionStatus: String {
-        if !predictionEnabled { return "已关闭" }
-        return snapshot.isPersonalized ? "个性化预测" : "正在学习"
-    }
-
-    var body: some View {
-        Form {
-            Section {
-                Toggle("启用个性化续航预测", isOn: $predictionEnabled)
-                    .tint(.effectiveAccent)
-
-                HStack(alignment: .center, spacing: 16) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.effectiveAccent.opacity(0.16))
-                            .frame(width: 54, height: 54)
-                        Image(systemName: "battery.75percent")
-                            .font(.system(size: 24, weight: .semibold))
-                            .foregroundStyle(Color.effectiveAccent)
-                    }
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(predictionHeadline)
-                            .font(.title2.bold())
-                            .monospacedDigit()
-                        Text(predictionEnabled ? predictionRangeText : "当前使用电池控制器估算")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer(minLength: 12)
-
-                    Text(predictionStatus)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(snapshot.isPersonalized ? Color.green : Color.secondary)
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 5)
-                        .background(Color.white.opacity(0.07), in: Capsule())
-                }
-                .padding(.vertical, 6)
-            } header: {
-                Text("续航预测")
-            } footer: {
-                Text("预测会综合电池控制器、最近耗电速度和你在相似使用场景下的本机历史；数据不足时自动使用控制器结果。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("学习进度")
-                        Spacer()
-                        Text(confidenceText)
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                    ProgressView(value: snapshot.confidence, total: 1)
-                        .tint(.effectiveAccent)
-                }
-
-                HStack(spacing: 10) {
-                    predictionMetric(
-                        title: "学习天数",
-                        value: "\(snapshot.learningDays) 天",
-                        icon: "calendar"
-                    )
-                    predictionMetric(
-                        title: "有效样本",
-                        value: "\(snapshot.sampleCount)",
-                        icon: "waveform.path.ecg"
-                    )
-                    predictionMetric(
-                        title: "当前场景",
-                        value: snapshot.usageCategory.displayName,
-                        icon: "macbook"
-                    )
-                }
-
-                HStack {
-                    Label("控制器基准", systemImage: "cpu")
-                    Spacer()
-                    Text(durationText(snapshot.controllerMinutes))
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                }
-            } header: {
-                Text("本机学习状态")
-            } footer: {
-                Text(snapshot.learningDays < 2 ? "至少跨两天积累有效样本后，个人习惯才会逐步参与预测。" : "使用时间越长，模型越能适应你的工作时段和常用负载。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section {
-                Label("所有学习数据仅保存在这台 Mac，不上传云端。", systemImage: "lock.shield")
-                    .foregroundStyle(.secondary)
-
-                Button(role: .destructive) {
-                    showingResetConfirmation = true
-                } label: {
-                    Label("清除学习记录", systemImage: "trash")
-                }
-                .disabled(snapshot.sampleCount == 0)
-            } header: {
-                Text("数据与隐私")
-            } footer: {
-                Text("只记录使用类别、时间段、低电量模式、显示器数量和放电速率，不记录应用名称、文件、网页或输入内容。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .accentColor(.effectiveAccent)
-        .navigationTitle("续航预测")
-        .scrollIndicators(.visible)
-        .onAppear {
-            batteryModel.refreshBatteryInfo()
-        }
-        .onChange(of: predictionEnabled) { _, enabled in
-            batteryModel.setPersonalPredictionEnabled(enabled)
-        }
-        .confirmationDialog(
-            "清除续航预测历史？",
-            isPresented: $showingResetConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("清除学习记录", role: .destructive) {
-                batteryModel.resetPersonalPredictionHistory()
-            }
-            Button("取消", role: .cancel) {}
-        } message: {
-            Text("清除后会立即回到电池控制器估算，并重新开始本机学习。")
-        }
-    }
-
-    private var predictionRangeText: String {
-        guard !batteryModel.isPluggedIn,
-              snapshot.lowerBoundMinutes > 0,
-              snapshot.upperBoundMinutes > 0 else {
-            return "拔下电源后开始估算"
-        }
-        return "常用强度范围 \(durationText(snapshot.lowerBoundMinutes))～\(durationText(snapshot.upperBoundMinutes))"
-    }
-
-    private var confidenceText: String {
-        snapshot.isPersonalized
-            ? "可信度 \(Int((snapshot.confidence * 100).rounded()))%"
-            : "建立个人基线中"
-    }
-
-    @ViewBuilder
-    private func predictionMetric(title: String, value: String, icon: String) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Label(title, systemImage: icon)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.body.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-        }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 10))
-    }
-
-    private func durationText(_ minutes: Int) -> String {
-        guard minutes > 0 else { return "正在估算" }
-        let hours = minutes / 60
-        let remainingMinutes = minutes % 60
-        if hours > 0, remainingMinutes > 0 {
-            return "\(hours)小时\(remainingMinutes)分钟"
-        }
-        if hours > 0 { return "\(hours)小时" }
-        return "\(remainingMinutes)分钟"
     }
 }
 

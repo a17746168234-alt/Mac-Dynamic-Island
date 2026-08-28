@@ -289,7 +289,6 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
         private var mouseDownEvent: NSEvent?
         private let dragThreshold: CGFloat = 3.0
         private var draggedURLs: [URL] = []
-        private var draggedItems: [ShelfItem] = []
         
         override func rightMouseDown(with event: NSEvent) {
             onRightClick?(event, self)
@@ -329,9 +328,6 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
             } else {
                 itemsToDrag = [item]
             }
-
-            // Store items being dragged for auto-remove feature
-            draggedItems = itemsToDrag
 
             // Create dragging items for AppKit
             var draggingItems: [NSDraggingItem] = []
@@ -393,16 +389,14 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
         // MARK: - NSDraggingSource
         
         func draggingSession(_ session: NSDraggingSession, sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
-            // When copyOnDrag is enabled, only allow copy operations
-            if Defaults[.copyOnDrag] {
-                return [.copy]
-            }
-            
+            // Shelf items stay available until the user explicitly removes them.
+            // Advertising a move operation lets Finder relocate a temporary source
+            // file and invalidates the bookmark that backs the shelf item.
             switch context {
             case .outsideApplication:
-                return [.copy, .move]
+                return [.copy]
             case .withinApplication:
-                return [.copy, .move, .generic]
+                return Defaults[.copyOnDrag] ? [.copy] : [.copy, .generic]
             @unknown default:
                 return [.copy]
             }
@@ -424,14 +418,6 @@ private struct DraggableClickHandler<Content: View>: NSViewRepresentable {
                 NSLog("🔐 Stopped security-scoped access after drag: \(url.path)")
             }
             draggedURLs.removeAll()
-
-            // Auto-remove items from shelf if enabled and drag succeeded
-            if Defaults[.autoRemoveShelfItems] && !operation.isEmpty {
-                for item in draggedItems {
-                    ShelfStateViewModel.shared.remove(item)
-                }
-            }
-            draggedItems.removeAll()
         }
         
         func ignoreModifierKeys(for session: NSDraggingSession) -> Bool {

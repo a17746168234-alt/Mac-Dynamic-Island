@@ -1,6 +1,6 @@
 import Foundation
 
-struct BluetoothDeviceStatus: Identifiable, Equatable {
+struct BluetoothDeviceStatus: Identifiable, Equatable, Sendable {
     let id: String
     let name: String
     let battery: Int?
