@@ -189,6 +189,9 @@ struct ContentView: View {
                     .onReceive(NotificationCenter.default.publisher(for: .sharingDidFinish)) { _ in
                         scheduleAutomaticClose()
                     }
+                    .onReceive(NotificationCenter.default.publisher(for: .shelfContextMenuDidDismiss)) { _ in
+                        scheduleAutomaticClose()
+                    }
                     .onChange(of: vm.notchState) { _, newState in
                         if newState == .closed && isHovering {
                             withAnimation(AppMotion.status) {

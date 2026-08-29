@@ -43,6 +43,7 @@ extension HomeModule: Defaults.Serializable {}
 // Define notification names at file scope
 extension Notification.Name {
     static let mediaControllerChanged = Notification.Name("mediaControllerChanged")
+    static let shelfContextMenuDidDismiss = Notification.Name("shelfContextMenuDidDismiss")
 }
 
 // Media controller types for selection in settings

@@ -46,6 +46,12 @@ class ShelfDragRegressionTests(unittest.TestCase):
         boring_view_model = (
             ROOT / "MacDynamicIsland/models/BoringViewModel.swift"
         ).read_text(encoding="utf-8")
+        content_view = (ROOT / "MacDynamicIsland/ContentView.swift").read_text(
+            encoding="utf-8"
+        )
+        constants = (ROOT / "MacDynamicIsland/models/Constants.swift").read_text(
+            encoding="utf-8"
+        )
 
         self.assertIn("onDragEnded?(screenPoint)", shelf_view)
         self.assertIn("ShelfFileDragCompletionMonitor.shared.finish", shelf_view)
@@ -54,6 +60,20 @@ class ShelfDragRegressionTests(unittest.TestCase):
         self.assertIn('addMenuItem(title: "Remove")', item_view_model)
         self.assertIn('case "Remove":', item_view_model)
         self.assertIn("ShelfActionService.remove(it)", item_view_model)
+        self.assertIn("shelfContextMenuDidDismiss", constants)
+
+        context_menu = item_view_model[
+            item_view_model.index("func presentContextMenu") :
+            item_view_model.index("private func isDirectory")
+        ]
+        self.assertLess(
+            context_menu.index("NSMenu.popUpContextMenu"),
+            context_menu.index("NotificationCenter.default.post"),
+        )
+        self.assertIn(
+            "publisher(for: .shelfContextMenuDidDismiss)", content_view
+        )
+        self.assertIn("scheduleAutomaticClose()", content_view)
 
 
 if __name__ == "__main__":

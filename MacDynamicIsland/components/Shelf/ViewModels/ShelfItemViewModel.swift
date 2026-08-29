@@ -398,6 +398,11 @@ final class ShelfItemViewModel: ObservableObject {
         menu.retainActionTarget(actionTarget)
         
         NSMenu.popUpContextMenu(menu, with: event, for: view)
+        // AppKit runs context menus in a nested event loop. If an action removes
+        // the item below the pointer, SwiftUI can rebuild the shelf before its
+        // outer hover region receives mouseExited. Re-check the real pointer
+        // position once menu tracking ends so the notch cannot remain stuck open.
+        NotificationCenter.default.post(name: .shelfContextMenuDidDismiss, object: nil)
     }
 
     private func isDirectory(_ url: URL) -> Bool {
